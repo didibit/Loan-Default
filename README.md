@@ -19,7 +19,9 @@ Secondly, I do Neural Network Implementation: Steps to follow
 
 
 How to run:
-JPM_SMOTE_HPC.ipynb is run in high performance computing (HPC). torch version: 2.2.2+cu121
+1. JPM_SMOTE_HPC.ipynb is run in high performance computing (HPC). torch version: 2.2.2+cu121
+2. or python main.py
+
 
 Model Performance on Val:
 Accuracy: 0.7700;
