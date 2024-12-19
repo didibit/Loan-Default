@@ -16,3 +16,7 @@ Secondly, I do Neural Network Implementation: Steps to follow
   2. Aplly Bayesian Optimization for hyperparameter tunning
   3. Train the model using training data
   4. Evaluate the model's performance on test data (Accuracy, AUC, AUPRC, F1 score)
+
+
+How to run:
+JPM_SMOTE_HPC.ipynb is run in high performance computing (HPC). torch version: 2.2.2+cu121
