@@ -22,7 +22,7 @@ How to run:
 JPM_SMOTE_HPC.ipynb is run in high performance computing (HPC). torch version: 2.2.2+cu121
 
 Model Performance on Val:
-Accuracy: 0.7700
-ROC AUC: 0.6158
-AUPRC: 0.0992
+Accuracy: 0.7700;
+ROC AUC: 0.6158;
+AUPRC: 0.0992;
 F1 Score: 0.1606
