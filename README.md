@@ -41,18 +41,25 @@ Secondly, I do Neural Network Implementation. Steps to follow:
 ###### How to run:
 Option 1. JPM_SMOTE_HPC.ipynb is run in high performance computing (HPC). torch version: 2.2.2+cu121
 
-Option 2. data_preprocessing.py: Functions to handle reading CSV files, cleaning data (outlier removal, dealing with missing values), and splitting into training/validation sets.
+Option 2. 
+- Preprocessing and Training. You can run the script using `python main.py`.
 
-model.py: Contains neural network classes written in PyTorch.
+By default, this will:
+1. Load and preprocess the training data.
+2. Train the model (with SMOTE for class imbalance).
+3. Validate performance on a hold-out validation set.
+4. Optionally save model weights to a .pth file.
 
-train.py: Defines the training loop, including optional hyperparameter tuning, validation checks, and metric computation.
+- (Optional) Directly call training. You can run the script using `python train.py`.
 
-test.py: Handles applying the same transformations to test data and generating predictions.
+- Generate Predictions on Test
+
+If your main.py already calls the test pipeline, it will generate test_predictions.csv. If you want to run test inference separately, you might do `python test.py`.
 
 
 ### Results
 Model Performance on Val:
-Accuracy: 0.7700;
-ROC AUC: 0.6158;
-AUPRC: 0.0992;
-F1 Score: 0.1606
+- Accuracy: 0.7700;
+- ROC AUC: 0.6158;
+- AUPRC: 0.0992;
+- F1 Score: 0.1606
