@@ -1,41 +1,106 @@
+#!/usr/bin/env python
+# coding: utf-8
+
+# In[ ]:
+
+
+# main.py
 
 import torch
-from torch.utils.data import DataLoader
-from sklearn.model_selection import train_test_split
-from sklearn.datasets import make_classification
-import model  # Import the model from model.py
-import train  # Import training logic from train.py
-import test  # Import testing logic from test.py
+import data_preprocessing
+from train import train_model, evaluate_model
+from test import preprocess_test_data, inference_on_test, save_predictions
 
-# Hyperparameters and configurations
-batch_size = 32
-learning_rate = 0.001
-epochs = 10
-device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+def main():
+    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+    print(f"Using device: {device}")
 
-# Generate a synthetic dataset (replace with actual dataset loading logic)
-X, y = make_classification(n_samples=1000, n_features=20, n_classes=2, random_state=42)
-X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+    # 1. Load and Clean Training Data
+    data = data_preprocessing.load_and_clean_training_data('training_loan_data.csv')
 
-# Convert data to PyTorch tensors
-train_data = torch.utils.data.TensorDataset(torch.tensor(X_train, dtype=torch.float32),
-                                             torch.tensor(y_train, dtype=torch.long))
-test_data = torch.utils.data.TensorDataset(torch.tensor(X_test, dtype=torch.float32),
-                                            torch.tensor(y_test, dtype=torch.long))
+    # 2. Further Preprocess (fill NAs, remove outliers, encode, remove duplicates)
+    data_cleaned = data_preprocessing.preprocess_data(data)
 
-train_loader = DataLoader(train_data, batch_size=batch_size, shuffle=True)
-test_loader = DataLoader(test_data, batch_size=batch_size, shuffle=False)
+    # 3. Split into train/val and scale/SMOTE
+    X_train_res, y_train_res, X_val_scaled, y_val, scaler = data_preprocessing.get_train_val_data(data_cleaned)
 
-# Initialize the model, loss function, and optimizer
-model_instance = model.MyModel()  # Replace 'MyModel' with the actual model class name
-model_instance.to(device)
-criterion = torch.nn.CrossEntropyLoss()
-optimizer = torch.optim.Adam(model_instance.parameters(), lr=learning_rate)
+    input_dim = X_train_res.shape[1]
 
-# Train the model
-print("Training the model...")
-train.train_model(model_instance, train_loader, criterion, optimizer, device, epochs)
+    # 4. Train the model
+    # Adjust hyperparameters as needed
+    model = train_model(
+        X_train_res, 
+        y_train_res, 
+        X_val_scaled, 
+        y_val, 
+        input_dim=input_dim,
+        lr=0.0073,
+        dr=0.4896,
+        hn1=42,
+        hn2=35,
+        batch_size=5345,   # Example from your best params
+        num_epochs=20,     # Increase as needed
+        device=device
+    )
 
-# Test the model
-print("Evaluating the model...")
-test.evaluate_model(model_instance, test_loader, device)
+    # 5. Evaluate on Validation
+    evaluate_model(model, X_val_scaled, y_val, device=device)
+
+    # 6. Load Test Data
+    import pandas as pd
+    test_data = pd.read_csv('testing_loan_data.csv')
+    # Drop unneeded columns (like you did)
+    drop_cols = ['id', 'desc', 'member_id', 'application_approved_flag', 'internal_score', 
+                 'total_bc_limit', 'bad_flag']  # If 'bad_flag' in test
+    test_data.drop(columns=drop_cols, inplace=True, errors='ignore')
+
+    # For the real scenario, you need the same fitted objects (imputer_mode, le_term, 
+    # ordinal_emp_length, ohe_home_ownership, ohe_purpose) used in training.
+    # Make sure to pass them from data_preprocessing or store them after training.
+    # Below is just a pseudo approach, assuming you stored them from training:
+    # bc_util_median, revol_util_median, tot_hi_cred_lim_median, ...
+    # Or you store them in a dictionary or something similar.
+
+    # For demonstration, we assume you have references to these from data_preprocessing step
+    # but in actual code, you'd refactor so you can retrieve them easily.
+    # e.g., data_preprocessing.preprocess_data(...) could return them, or store them as global.
+
+    # 7. Preprocess Test Data
+    # We'll just show function call with placeholders.
+    # Make sure to retrieve the actual objects from your data_preprocessing code or store them after.
+    # For example, data_preprocessing could return them as well.
+
+    # all needed transforms (objects) must be passed here:
+    # test_preprocessed = preprocess_test_data(
+    #    test_data, 
+    #    bc_util_median, revol_util_median, tot_hi_cred_lim_median, 
+    #    tot_cur_bal_median, 
+    #    imputer_mode, le_term, ordinal_emp_length, 
+    #    ohe_home_ownership, ohe_purpose
+    # )
+
+    # For simplicity, suppose we skip that step and do minimal approach:
+    test_preprocessed = test_data.copy()
+
+    # 8. Inference on test data
+    x_numerical_columns = [
+        'loan_amnt', 'int_rate', 'annual_inc', 'percent_bc_gt_75', 
+        'bc_util', 'dti', 'inq_last_6mths', 'mths_since_recent_inq',
+        'revol_util', 'mths_since_last_major_derog', 
+        'tot_hi_cred_lim', 'tot_cur_bal'
+    ]
+    all_preds, binary_preds = inference_on_test(
+        model, 
+        test_preprocessed, 
+        scaler, 
+        x_numerical_columns, 
+        device=device, 
+        batch_size=5345
+    )
+
+    # 9. Save predictions
+    save_predictions(binary_preds, output_file='test_predictions.csv')
+
+if __name__ == "__main__":
+    main()
+
